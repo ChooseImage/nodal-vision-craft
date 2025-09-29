@@ -17,6 +17,9 @@ import 'reactflow/dist/style.css';
 import { ModelLoaderCard } from './cards/ModelLoaderCard';
 import { SkyboxGeneratorCard } from './cards/SkyboxGeneratorCard';
 import { SceneRendererCard } from './cards/SceneRendererCard';
+import { AIImageEnhancerCard } from './cards/AIImageEnhancerCard';
+import { AIVideoGeneratorCard } from './cards/AIVideoGeneratorCard';
+import { VideoPlayerCard } from './cards/VideoPlayerCard';
 import { NodeToolbar } from './NodeToolbar';
 import { ContextMenu } from './ContextMenu';
 
@@ -25,6 +28,9 @@ const nodeTypes = {
   modelLoader: ModelLoaderCard,
   skyboxGenerator: SkyboxGeneratorCard,
   sceneRenderer: SceneRendererCard,
+  aiImageEnhancer: AIImageEnhancerCard,
+  aiVideoGenerator: AIVideoGeneratorCard,
+  videoPlayer: VideoPlayerCard,
 };
 
 // Schema definitions for type checking

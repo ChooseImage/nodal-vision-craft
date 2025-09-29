@@ -4,6 +4,7 @@ import { BaseCard } from './BaseCard';
 import { Button } from '@/components/ui/button';
 import { Box, Upload } from 'lucide-react';
 import { DataSchemas } from '../NodeEditor';
+import { use3DControls } from '@/hooks/use3DControls';
 
 // Three.js imports
 import * as THREE from 'three';
@@ -20,6 +21,12 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data }) 
   const rendererRef = useRef<THREE.WebGLRenderer>();
   const cameraRef = useRef<THREE.PerspectiveCamera>();
   const animationRef = useRef<number>();
+
+  const { attachControls } = use3DControls({
+    camera: cameraRef.current,
+    renderer: rendererRef.current,
+    scene: sceneRef.current,
+  });
 
   // Initialize Three.js scene
   useEffect(() => {
@@ -84,6 +91,9 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data }) 
 
     mountRef.current.appendChild(renderer.domElement);
 
+    // Attach custom 3D controls
+    const detachControls = attachControls(renderer.domElement);
+
     // Animation loop
     const animate = () => {
       animationRef.current = requestAnimationFrame(animate);
@@ -100,6 +110,7 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data }) 
 
     // Cleanup
     return () => {
+      detachControls();
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }

@@ -7,12 +7,15 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Image, Upload, Sparkles, Palette } from 'lucide-react';
 import { DataSchemas } from '../NodeEditor';
+import { generateSkyboxImage } from '@/utils/geminiAPI';
+import { useToast } from '@/hooks/use-toast';
 
 interface SkyboxGeneratorData {
   label: string;
 }
 
 export const SkyboxGeneratorCard: React.FC<NodeProps<SkyboxGeneratorData>> = ({ data }) => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('default');
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -23,11 +26,30 @@ export const SkyboxGeneratorCard: React.FC<NodeProps<SkyboxGeneratorData>> = ({ 
     
     setIsGenerating(true);
     
-    // Simulate AI generation
-    setTimeout(() => {
-      setPreviewImage('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=150&fit=crop');
+    try {
+      const result = await generateSkyboxImage(prompt);
+      if (result.success) {
+        setPreviewImage(result.imageUrl);
+        toast({
+          title: "Skybox generated successfully",
+          description: "Your AI-generated skybox is ready.",
+        });
+      } else {
+        toast({
+          title: "Generation failed",
+          description: result.error || "Failed to generate skybox",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
       setIsGenerating(false);
-    }, 3000);
+    }
   };
 
   const handleDefaultSkybox = () => {
