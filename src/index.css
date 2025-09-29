@@ -2,41 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* 3D Node Editor Design System - Dark theme inspired by Linear.com */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core dark theme colors */
+    --background: 220 13% 9%;
+    --foreground: 210 40% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Surface colors for cards and panels */
+    --card: 220 13% 11%;
+    --card-foreground: 210 40% 98%;
+    --card-border: 220 13% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    /* Interactive surfaces */
+    --popover: 220 13% 11%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Brand colors */
+    --primary: 250 100% 70%;
+    --primary-foreground: 220 13% 9%;
+    --primary-glow: 250 100% 80%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary surfaces */
+    --secondary: 220 13% 15%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted elements */
+    --muted: 220 13% 13%;
+    --muted-foreground: 215 25% 65%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent colors for highlights */
+    --accent: 175 70% 65%;
+    --accent-foreground: 220 13% 9%;
 
-    --destructive: 0 84.2% 60.2%;
+    /* Status colors */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
+    --success: 142 70% 55%;
+    --warning: 38 92% 60%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Border and input styles */
+    --border: 220 13% 15%;
+    --input: 220 13% 13%;
+    --ring: 250 100% 70%;
 
-    --radius: 0.5rem;
+    /* Node editor specific colors */
+    --canvas-bg: 220 13% 8%;
+    --node-bg: 220 13% 11%;
+    --node-border: 220 13% 18%;
+    --node-hover: 220 13% 13%;
+    --port-model: 46 96% 65%;
+    --port-image: 175 70% 65%;
+    --port-video: 316 73% 68%;
+    --port-texture: 25 95% 68%;
+    --connection-active: 250 100% 70%;
+
+    /* Glass morphism effects */
+    --glass-bg: 220 13% 11% / 0.8;
+    --glass-border: 220 13% 25% / 0.3;
+
+    /* Shadows and glows */
+    --shadow-elegant: 220 13% 5% / 0.5;
+    --glow-primary: 250 100% 70% / 0.3;
+    --glow-accent: 175 70% 65% / 0.2;
+
+    /* Animation variables */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -100,6 +135,84 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    background: hsl(var(--canvas-bg));
+  }
+
+  /* Node editor specific styles */
+  .react-flow__background {
+    background: hsl(var(--canvas-bg));
+  }
+
+  .react-flow__edge-path {
+    stroke: hsl(var(--connection-active));
+    stroke-width: 2px;
+  }
+
+  .react-flow__edge.selected .react-flow__edge-path {
+    stroke: hsl(var(--primary));
+    stroke-width: 3px;
+  }
+
+  .react-flow__handle {
+    width: 12px;
+    height: 12px;
+    border: 2px solid hsl(var(--background));
+    transition: var(--transition-smooth);
+  }
+
+  .react-flow__handle-top,
+  .react-flow__handle-bottom {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .react-flow__handle-left,
+  .react-flow__handle-right {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  /* Port type colors */
+  .port-model {
+    background: hsl(var(--port-model));
+  }
+
+  .port-image {
+    background: hsl(var(--port-image));
+  }
+
+  .port-video {
+    background: hsl(var(--port-video));
+  }
+
+  .port-texture {
+    background: hsl(var(--port-texture));
+  }
+
+  /* Glassmorphism effect */
+  .glass {
+    background: hsl(var(--glass-bg));
+    border: 1px solid hsl(var(--glass-border));
+    backdrop-filter: blur(12px);
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
   }
 }

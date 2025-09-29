@@ -19,6 +19,24 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        canvas: {
+          bg: "hsl(var(--canvas-bg))",
+        },
+        node: {
+          bg: "hsl(var(--node-bg))",
+          border: "hsl(var(--node-border))",
+          hover: "hsl(var(--node-hover))",
+        },
+        port: {
+          model: "hsl(var(--port-model))",
+          image: "hsl(var(--port-image))",
+          video: "hsl(var(--port-video))",
+          texture: "hsl(var(--port-texture))",
+        },
+        glass: {
+          bg: "hsl(var(--glass-bg))",
+          border: "hsl(var(--glass-border))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

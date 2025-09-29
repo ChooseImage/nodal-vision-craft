@@ -1,0 +1,127 @@
+import React, { useState } from 'react';
+import { NodeProps } from 'reactflow';
+import { BaseCard } from './BaseCard';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Image, Upload, Sparkles, Palette } from 'lucide-react';
+import { DataSchemas } from '../NodeEditor';
+
+interface SkyboxGeneratorData {
+  label: string;
+}
+
+export const SkyboxGeneratorCard: React.FC<NodeProps<SkyboxGeneratorData>> = ({ data }) => {
+  const [activeTab, setActiveTab] = useState('default');
+  const [prompt, setPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+    
+    setIsGenerating(true);
+    
+    // Simulate AI generation
+    setTimeout(() => {
+      setPreviewImage('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=150&fit=crop');
+      setIsGenerating(false);
+    }, 3000);
+  };
+
+  const handleDefaultSkybox = () => {
+    setPreviewImage('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=300&h=150&fit=crop');
+  };
+
+  const outputs = [
+    {
+      id: 'skybox-output',
+      label: 'Environment Texture',
+      schema: DataSchemas.SKYBOX_TEXTURE,
+      position: 'right' as const,
+    }
+  ];
+
+  return (
+    <BaseCard
+      title="Skybox Generator"
+      icon={<Image className="w-4 h-4 text-port-texture" />}
+      outputs={outputs}
+    >
+      <div className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="upload" className="text-xs">Upload</TabsTrigger>
+            <TabsTrigger value="default" className="text-xs">Default</TabsTrigger>
+            <TabsTrigger value="generate" className="text-xs">AI Gen</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="upload" className="space-y-3">
+            <Label className="text-xs">Upload HDRI File</Label>
+            <div className="space-y-2">
+              <Button variant="outline" size="sm" className="w-full gap-2">
+                <Upload className="w-4 h-4" />
+                Select .HDR/.EXR
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                No file selected
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="default" className="space-y-3">
+            <Label className="text-xs">Default Environment</Label>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full gap-2"
+              onClick={handleDefaultSkybox}
+            >
+              <Palette className="w-4 h-4" />
+              Apply Default Skybox
+            </Button>
+          </TabsContent>
+
+          <TabsContent value="generate" className="space-y-3">
+            <div className="space-y-2">
+              <Label className="text-xs">Environment Prompt</Label>
+              <Input
+                placeholder="a crossroad in manhattan at sunset"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="text-xs"
+              />
+            </div>
+            <Button 
+              size="sm" 
+              className="w-full gap-2"
+              onClick={handleGenerate}
+              disabled={isGenerating || !prompt.trim()}
+            >
+              <Sparkles className="w-4 h-4" />
+              {isGenerating ? 'Generating...' : 'Generate'}
+            </Button>
+          </TabsContent>
+        </Tabs>
+
+        {/* Preview */}
+        {previewImage && (
+          <div className="space-y-2">
+            <Label className="text-xs">Preview</Label>
+            <div className="relative bg-muted rounded-lg overflow-hidden">
+              <img
+                src={previewImage}
+                alt="Skybox preview"
+                className="w-full h-24 object-cover"
+              />
+              <div className="absolute bottom-1 right-1 text-xs text-white bg-black/50 px-1 rounded">
+                360° HDRI
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </BaseCard>
+  );
+};
