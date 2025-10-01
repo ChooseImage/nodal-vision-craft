@@ -153,11 +153,11 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data }) 
       camera.lookAt(target);
     };
 
-    // Attach event listeners
+    // Attach event listeners with passive option for wheel events
     renderer.domElement.addEventListener('mousedown', handleMouseDown);
     renderer.domElement.addEventListener('mousemove', handleMouseMove);
     renderer.domElement.addEventListener('mouseup', handleMouseUp);
-    renderer.domElement.addEventListener('wheel', handleWheel);
+    renderer.domElement.addEventListener('wheel', handleWheel, { passive: false });
 
     // Store cleanup function
     const detachControls = () => {
@@ -195,7 +195,7 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data }) 
       }
       renderer.dispose();
     };
-  }, [hasCustomModel]);
+  }, []); // Removed hasCustomModel from dependency array
 
   const removeCurrentModel = () => {
     if (currentModelRef.current && sceneRef.current) {
