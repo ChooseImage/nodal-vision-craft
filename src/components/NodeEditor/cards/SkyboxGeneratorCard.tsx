@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Image, Upload, Sparkles, Palette } from 'lucide-react';
 import { DataSchemas } from '../NodeEditor';
+import { useNodeData } from '../NodeDataContext';
 import { generateSkyboxImage } from '@/utils/geminiAPI';
 import { useToast } from '@/hooks/use-toast';
 
@@ -14,7 +15,8 @@ interface SkyboxGeneratorData {
   label: string;
 }
 
-export const SkyboxGeneratorCard: React.FC<NodeProps<SkyboxGeneratorData>> = ({ data }) => {
+export const SkyboxGeneratorCard: React.FC<NodeProps<SkyboxGeneratorData>> = ({ data, id }) => {
+  const { updateNodeData } = useNodeData();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('default');
   const [prompt, setPrompt] = useState('');
@@ -30,6 +32,12 @@ export const SkyboxGeneratorCard: React.FC<NodeProps<SkyboxGeneratorData>> = ({ 
       const result = await generateSkyboxImage(prompt);
       if (result.success) {
         setPreviewImage(result.imageUrl);
+        
+        // Publish skybox data to other nodes
+        if (id) {
+          updateNodeData(id, { skyboxTexture: result.imageUrl });
+        }
+        
         toast({
           title: "Skybox generated successfully",
           description: "Your AI-generated skybox is ready.",
@@ -53,7 +61,13 @@ export const SkyboxGeneratorCard: React.FC<NodeProps<SkyboxGeneratorData>> = ({ 
   };
 
   const handleDefaultSkybox = () => {
-    setPreviewImage('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=300&h=150&fit=crop');
+    const defaultSkyboxUrl = 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=300&h=150&fit=crop';
+    setPreviewImage(defaultSkyboxUrl);
+    
+    // Publish skybox data to other nodes
+    if (id) {
+      updateNodeData(id, { skyboxTexture: defaultSkyboxUrl });
+    }
   };
 
   const outputs = [

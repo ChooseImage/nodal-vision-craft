@@ -22,6 +22,7 @@ import { AIVideoGeneratorCard } from './cards/AIVideoGeneratorCard';
 import { VideoPlayerCard } from './cards/VideoPlayerCard';
 import { NodeToolbar } from './NodeToolbar';
 import { ContextMenu } from './ContextMenu';
+import { NodeDataProvider } from './NodeDataContext';
 
 // Define node types
 const nodeTypes = {
@@ -168,7 +169,9 @@ export const NodeEditor: React.FC = () => {
 export const NodeEditorWrapper: React.FC = () => {
   return (
     <ReactFlowProvider>
-      <NodeEditor />
+      <NodeDataProvider>
+        <NodeEditor />
+      </NodeDataProvider>
     </ReactFlowProvider>
   );
 };

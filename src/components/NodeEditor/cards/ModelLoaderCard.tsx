@@ -4,6 +4,7 @@ import { BaseCard } from './BaseCard';
 import { Button } from '@/components/ui/button';
 import { Box, Upload } from 'lucide-react';
 import { DataSchemas } from '../NodeEditor';
+import { useNodeData } from '../NodeDataContext';
 // Three.js imports
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -14,7 +15,8 @@ interface ModelLoaderData {
   label: string;
 }
 
-export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data }) => {
+export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id }) => {
+  const { updateNodeData } = useNodeData();
   const [fileName, setFileName] = useState<string>('Default Cube');
   const [isLoading, setIsLoading] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
@@ -241,6 +243,11 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data }) 
     sceneRef.current.add(model);
     currentModelRef.current = model;
     setHasCustomModel(true);
+
+    // Publish model data to other nodes
+    if (id) {
+      updateNodeData(id, { model: model.clone() });
+    }
   };
 
   const loadModel = async (file: File): Promise<THREE.Object3D> => {
