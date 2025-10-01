@@ -246,7 +246,12 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
 
     // Publish model data to other nodes
     if (id) {
+      console.log('[ModelLoader] Publishing model data for node:', id);
+      console.log('[ModelLoader] Model object:', model);
       updateNodeData(id, { model: model.clone() });
+      console.log('[ModelLoader] Model data published successfully');
+    } else {
+      console.log('[ModelLoader] ⚠️ No ID available, cannot publish model data');
     }
   };
 

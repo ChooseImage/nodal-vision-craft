@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { NodeProps, useReactFlow } from 'reactflow';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { NodeProps, useReactFlow, useEdges } from 'reactflow';
 import { BaseCard } from './BaseCard';
 import { Button } from '@/components/ui/button';
 import { Palette, RefreshCw } from 'lucide-react';
@@ -13,7 +13,7 @@ interface SceneRendererData {
 
 export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data, id }) => {
   const { getNodeData, subscribeToNode } = useNodeData();
-  const { getEdges } = useReactFlow();
+  const edges = useEdges();
   const [isRendering, setIsRendering] = useState(false);
   const [lastRender, setLastRender] = useState<string | null>(null);
   const mountRef = useRef<HTMLDivElement>(null);
@@ -208,59 +208,15 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
     };
   }, []);
 
-  // Listen for incoming data from connected nodes
-  useEffect(() => {
-    if (!id) return;
-
-    const edges = getEdges();
-    const connectedEdges = edges.filter(edge => edge.target === id);
-    
-    const unsubscribeFunctions: (() => void)[] = [];
-
-    connectedEdges.forEach(edge => {
-      const sourceNodeId = edge.source;
-      
-      // Subscribe to the source node's data updates
-      const unsubscribe = subscribeToNode(sourceNodeId, (nodeData) => {
-        // Handle model data
-        if (nodeData.model && edge.targetHandle === 'model-input') {
-          addModelToScene(nodeData.model.clone());
-        }
-        
-        // Handle skybox data
-        if (nodeData.skyboxTexture && edge.targetHandle === 'skybox-input') {
-          updateSkybox(nodeData.skyboxTexture);
-        }
-      });
-      
-      unsubscribeFunctions.push(unsubscribe);
-      
-      // Also check for existing data
-      const existingData = getNodeData(sourceNodeId);
-      if (existingData) {
-        if (existingData.model && edge.targetHandle === 'model-input') {
-          addModelToScene(existingData.model.clone());
-        }
-        if (existingData.skyboxTexture && edge.targetHandle === 'skybox-input') {
-          updateSkybox(existingData.skyboxTexture);
-        }
-      }
-    });
-
-    // Cleanup subscriptions
-    return () => {
-      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
-    };
-  }, [id, getEdges, subscribeToNode, getNodeData]);
-
-  const removeCurrentModel = () => {
+  // Define model and skybox handling functions
+  const removeCurrentModel = useCallback(() => {
     if (currentModelRef.current && sceneRef.current) {
       sceneRef.current.remove(currentModelRef.current);
       currentModelRef.current = null;
     }
-  };
+  }, []);
 
-  const addModelToScene = (model: THREE.Object3D) => {
+  const addModelToScene = useCallback((model: THREE.Object3D) => {
     if (!sceneRef.current) return;
 
     // Remove previous model
@@ -296,9 +252,9 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
 
     sceneRef.current.add(model);
     currentModelRef.current = model;
-  };
+  }, [removeCurrentModel]);
 
-  const updateSkybox = (skyboxTexture: THREE.Texture | string) => {
+  const updateSkybox = useCallback((skyboxTexture: THREE.Texture | string) => {
     if (!sceneRef.current) return;
 
     if (typeof skyboxTexture === 'string') {
@@ -311,7 +267,74 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
       // Use provided texture
       sceneRef.current.background = skyboxTexture;
     }
-  };
+  }, []);
+
+  // Listen for incoming data from connected nodes
+  useEffect(() => {
+    if (!id) {
+      console.log('[SceneRenderer] No ID provided');
+      return;
+    }
+
+    console.log('[SceneRenderer] Effect running for node:', id);
+    console.log('[SceneRenderer] All edges:', edges);
+    
+    const connectedEdges = edges.filter(edge => edge.target === id);
+    console.log('[SceneRenderer] Connected edges to this node:', connectedEdges);
+    
+    const unsubscribeFunctions: (() => void)[] = [];
+
+    connectedEdges.forEach(edge => {
+      const sourceNodeId = edge.source;
+      console.log('[SceneRenderer] Processing edge from:', sourceNodeId, 'to handle:', edge.targetHandle);
+      
+      // First, check for existing data immediately
+      const existingData = getNodeData(sourceNodeId);
+      console.log('[SceneRenderer] Existing data from node', sourceNodeId, ':', existingData);
+      
+      if (existingData) {
+        if (existingData.model && edge.targetHandle === 'model-input') {
+          console.log('[SceneRenderer] ✅ Loading existing model from node:', sourceNodeId);
+          addModelToScene(existingData.model.clone());
+        } else {
+          console.log('[SceneRenderer] ❌ No model data or wrong handle. Has model:', !!existingData.model, 'Handle:', edge.targetHandle);
+        }
+        
+        if (existingData.skyboxTexture && edge.targetHandle === 'skybox-input') {
+          console.log('[SceneRenderer] ✅ Loading existing skybox from node:', sourceNodeId);
+          updateSkybox(existingData.skyboxTexture);
+        }
+      } else {
+        console.log('[SceneRenderer] ⚠️ No existing data found for node:', sourceNodeId);
+      }
+      
+      // Then subscribe to future updates
+      const unsubscribe = subscribeToNode(sourceNodeId, (nodeData) => {
+        console.log('[SceneRenderer] 📡 Received update from node:', sourceNodeId, nodeData);
+        
+        // Handle model data
+        if (nodeData.model && edge.targetHandle === 'model-input') {
+          console.log('[SceneRenderer] ✅ Applying model update');
+          addModelToScene(nodeData.model.clone());
+        }
+        
+        // Handle skybox data
+        if (nodeData.skyboxTexture && edge.targetHandle === 'skybox-input') {
+          console.log('[SceneRenderer] ✅ Applying skybox update');
+          updateSkybox(nodeData.skyboxTexture);
+        }
+      });
+      
+      console.log('[SceneRenderer] Subscribed to node:', sourceNodeId);
+      unsubscribeFunctions.push(unsubscribe);
+    });
+
+    // Cleanup subscriptions
+    return () => {
+      console.log('[SceneRenderer] Cleaning up subscriptions');
+      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+    };
+  }, [id, edges, subscribeToNode, getNodeData, addModelToScene, updateSkybox]);
 
   const handleRender = async () => {
     if (!rendererRef.current || !sceneRef.current || !cameraRef.current) return;

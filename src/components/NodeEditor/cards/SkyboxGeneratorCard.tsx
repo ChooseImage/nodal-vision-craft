@@ -60,13 +60,18 @@ export const SkyboxGeneratorCard: React.FC<NodeProps<SkyboxGeneratorData>> = ({ 
     }
   };
 
-  const handleDefaultSkybox = () => {
-    const defaultSkyboxUrl = 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=300&h=150&fit=crop';
-    setPreviewImage(defaultSkyboxUrl);
+  // Automatically apply default skybox when tab is selected
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
     
-    // Publish skybox data to other nodes
-    if (id) {
-      updateNodeData(id, { skyboxTexture: defaultSkyboxUrl });
+    if (value === 'default') {
+      const defaultSkyboxUrl = 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=300&h=150&fit=crop';
+      setPreviewImage(defaultSkyboxUrl);
+      
+      // Publish skybox data to other nodes
+      if (id) {
+        updateNodeData(id, { skyboxTexture: defaultSkyboxUrl });
+      }
     }
   };
 
@@ -86,7 +91,7 @@ export const SkyboxGeneratorCard: React.FC<NodeProps<SkyboxGeneratorData>> = ({ 
       outputs={outputs}
     >
       <div className="space-y-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="upload" className="text-xs">Upload</TabsTrigger>
             <TabsTrigger value="default" className="text-xs">Default</TabsTrigger>
@@ -108,15 +113,9 @@ export const SkyboxGeneratorCard: React.FC<NodeProps<SkyboxGeneratorData>> = ({ 
 
           <TabsContent value="default" className="space-y-3">
             <Label className="text-xs">Default Environment</Label>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full gap-2"
-              onClick={handleDefaultSkybox}
-            >
-              <Palette className="w-4 h-4" />
-              Apply Default Skybox
-            </Button>
+            <div className="text-xs text-muted-foreground p-3 bg-muted rounded-md text-center">
+              Default skybox applied automatically
+            </div>
           </TabsContent>
 
           <TabsContent value="generate" className="space-y-3">
