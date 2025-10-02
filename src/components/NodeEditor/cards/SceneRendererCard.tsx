@@ -90,19 +90,6 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
     scene.add(cube);
     defaultCubeRef.current = cube;
 
-    // Ground plane
-    const planeGeometry = new THREE.PlaneGeometry(10, 10);
-    const planeMaterial = new THREE.MeshPhongMaterial({ 
-      color: 0x2a2a2a,
-      transparent: true,
-      opacity: 0.3
-    });
-    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    plane.rotation.x = -Math.PI / 2;
-    plane.position.y = -0.5;
-    plane.receiveShadow = true;
-    scene.add(plane);
-
     mountRef.current.appendChild(renderer.domElement);
 
     // Initialize 3D controls directly
