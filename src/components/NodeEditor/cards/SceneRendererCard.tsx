@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { NodeProps, useReactFlow, useEdges } from 'reactflow';
 import { BaseCard } from './BaseCard';
 import { Button } from '@/components/ui/button';
-import { Palette, RefreshCw } from 'lucide-react';
+import { Palette, RefreshCw, Sparkles } from 'lucide-react';
 import { DataSchemas } from '../NodeEditor';
 import { useNodeData } from '../NodeDataContext';
+import { enhanceSceneWithAI } from '@/utils/genAI';
 import * as THREE from 'three';
 
 interface SceneRendererData {
@@ -15,7 +16,9 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
   const { getNodeData, subscribeToNode } = useNodeData();
   const edges = useEdges();
   const [isRendering, setIsRendering] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const [lastRender, setLastRender] = useState<string | null>(null);
+  const [enhancedRender, setEnhancedRender] = useState<string | null>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene>();
   const rendererRef = useRef<THREE.WebGLRenderer>();
@@ -304,20 +307,59 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
     };
   }, [id, edges, subscribeToNode, getNodeData, addModelToScene, updateSkybox]);
 
+  const captureSceneSnapshot = useCallback((): string | null => {
+    if (!rendererRef.current || !sceneRef.current || !cameraRef.current) {
+      return null;
+    }
+
+    // Render the current scene
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
+    
+    // Capture as data URL (base64 PNG)
+    const dataURL = rendererRef.current.domElement.toDataURL('image/png');
+    return dataURL;
+  }, []);
+
   const handleRender = async () => {
     if (!rendererRef.current || !sceneRef.current || !cameraRef.current) return;
 
     setIsRendering(true);
+    setEnhancedRender(null); // Clear previous enhancement
     
-    // Simulate rendering time
-    setTimeout(() => {
-      if (rendererRef.current && sceneRef.current && cameraRef.current) {
-        rendererRef.current.render(sceneRef.current, cameraRef.current);
-        const dataURL = rendererRef.current.domElement.toDataURL();
-        setLastRender(dataURL);
+    // Capture the scene
+    const snapshot = captureSceneSnapshot();
+    
+    if (snapshot) {
+      setLastRender(snapshot);
+    }
+    
+    setIsRendering(false);
+  };
+
+  const handleEnhanceWithAI = async () => {
+    if (!lastRender) {
+      console.warn('No render available to enhance. Please render the scene first.');
+      return;
+    }
+
+    setIsEnhancing(true);
+
+    try {
+      // Use Gemini 2.5 Flash Image to make the scene photorealistic
+      const result = await enhanceSceneWithAI({
+        baseImage: lastRender,
+        prompt: 'Make this image look photorealistic. Enhance the lighting, materials, and overall visual quality to create a stunning, realistic render.',
+        provider: 'gemini',
+      });
+
+      if (result.success) {
+        setEnhancedRender(result.imageUrl);
       }
-      setIsRendering(false);
-    }, 1500);
+    } catch (error) {
+      console.error('Failed to enhance scene:', error);
+    } finally {
+      setIsEnhancing(false);
+    }
   };
 
   const inputs = [
@@ -353,15 +395,30 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
     >
       <div className="space-y-4">
         {/* Render Controls */}
-        <Button 
-          size="sm" 
-          className="w-full gap-2"
-          onClick={handleRender}
-          disabled={isRendering}
-        >
-          <RefreshCw className={`w-4 h-4 ${isRendering ? 'animate-spin' : ''}`} />
-          {isRendering ? 'Rendering...' : 'Render Scene'}
-        </Button>
+        <div className="space-y-2">
+          <Button 
+            size="sm" 
+            className="w-full gap-2"
+            onClick={handleRender}
+            disabled={isRendering}
+          >
+            <RefreshCw className={`w-4 h-4 ${isRendering ? 'animate-spin' : ''}`} />
+            {isRendering ? 'Rendering...' : 'Render Scene'}
+          </Button>
+
+          {lastRender && (
+            <Button 
+              size="sm" 
+              className="w-full gap-2"
+              onClick={handleEnhanceWithAI}
+              disabled={isEnhancing}
+              variant="secondary"
+            >
+              <Sparkles className={`w-4 h-4 ${isEnhancing ? 'animate-pulse' : ''}`} />
+              {isEnhancing ? 'Enhancing with AI...' : 'Make Photorealistic'}
+            </Button>
+          )}
+        </div>
 
         {/* Preview */}
         <div className="space-y-2">
@@ -380,7 +437,9 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
         {/* Rendered Output */}
         {lastRender && (
           <div className="space-y-2">
-            <div className="text-xs font-medium text-port-image">Rendered Output</div>
+            <div className="text-xs font-medium text-port-image">
+              {enhancedRender ? 'Original Render' : 'Rendered Output'}
+            </div>
             <div className="relative bg-muted rounded-lg overflow-hidden">
               <img
                 src={lastRender}
@@ -388,7 +447,28 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
                 className="w-full h-32 object-cover"
               />
               <div className="absolute bottom-1 right-1 text-xs text-white bg-black/50 px-1 rounded">
-                Final Render
+                {enhancedRender ? 'Original' : 'Final Render'}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* AI Enhanced Output */}
+        {enhancedRender && (
+          <div className="space-y-2">
+            <div className="text-xs font-medium text-port-image flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              AI Enhanced (Photorealistic)
+            </div>
+            <div className="relative bg-muted rounded-lg overflow-hidden">
+              <img
+                src={enhancedRender}
+                alt="AI enhanced scene"
+                className="w-full h-32 object-cover"
+              />
+              <div className="absolute bottom-1 right-1 text-xs text-white bg-black/50 px-1 rounded flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                Photorealistic
               </div>
             </div>
           </div>

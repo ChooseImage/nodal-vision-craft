@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { APIKeyModal } from '@/components/APIKeyModal';
 
 interface NodeToolbarProps {
   onAddNode: (type: string, position: { x: number; y: number }) => void;
@@ -25,6 +26,8 @@ export const NodeToolbar: React.FC<NodeToolbarProps> = ({ onAddNode }) => {
       <div className="glass rounded-lg p-2 border">
         <h1 className="text-lg font-semibold text-foreground px-2">3D AI Pipeline</h1>
       </div>
+      
+      <APIKeyModal />
       
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
