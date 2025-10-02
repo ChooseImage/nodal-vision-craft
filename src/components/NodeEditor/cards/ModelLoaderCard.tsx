@@ -171,6 +171,7 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
     const handleContextMenu = (event: MouseEvent) => {
       // Prevent context menu on canvas
       event.preventDefault();
+      event.stopPropagation();
     };
 
     const handleWheel = (event: WheelEvent) => {

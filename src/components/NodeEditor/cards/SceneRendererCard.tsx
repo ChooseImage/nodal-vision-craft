@@ -191,6 +191,7 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
     const handleContextMenu = (event: MouseEvent) => {
       // Prevent context menu on canvas
       event.preventDefault();
+      event.stopPropagation();
     };
 
     const handleWheel = (event: WheelEvent) => {
