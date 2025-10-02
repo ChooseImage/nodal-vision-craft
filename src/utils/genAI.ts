@@ -83,12 +83,97 @@ export const generateImageWithAI = async (
 };
 
 /**
+ * Mock enhancement function for dev mode
+ * Simulates AI enhancement with a delay and visual indicator
+ */
+const mockEnhanceSceneWithAI = async (
+  baseImage: string,
+  prompt: string
+): Promise<ImageToImageResponse> => {
+  console.log('🎨 Using MOCK API for enhancement (Dev Mode)');
+  console.log('🎨 Mock enhancement prompt:', prompt);
+  
+  try {
+    // Simulate API delay (2-3 seconds)
+    await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1000));
+    
+    // Create a canvas to add a visual indicator that this is mock data
+    const img = new Image();
+    img.src = baseImage;
+    
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+    });
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d')!;
+    
+    // Draw the original image
+    ctx.drawImage(img, 0, 0);
+    
+    // Add a subtle color overlay to simulate enhancement
+    ctx.fillStyle = 'rgba(255, 215, 0, 0.1)'; // Golden overlay
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Add "MOCK" watermark
+    ctx.font = 'bold 20px Arial';
+    ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.lineWidth = 2;
+    const text = 'MOCK ENHANCED';
+    const textWidth = ctx.measureText(text).width;
+    const x = canvas.width - textWidth - 10;
+    const y = canvas.height - 10;
+    ctx.strokeText(text, x, y);
+    ctx.fillText(text, x, y);
+    
+    const enhancedImage = canvas.toDataURL('image/png');
+    
+    console.log('🎨 Mock enhancement successful');
+    toast({
+      title: 'Scene Enhanced! (Mock)',
+      description: 'Dev mode: Using mock AI enhancement',
+    });
+    
+    return {
+      imageUrl: enhancedImage,
+      success: true,
+    };
+  } catch (error) {
+    console.error('🎨 Mock enhancement failed:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    toast({
+      title: 'Mock Enhancement Failed',
+      description: errorMessage,
+      variant: 'destructive',
+    });
+    
+    return {
+      imageUrl: baseImage,
+      success: false,
+      error: errorMessage,
+    };
+  }
+};
+
+/**
  * Enhance a 3D scene render to look photorealistic using Gemini 2.5 Flash Image API
  * This uses the "Nano Banana" image-to-image editing capability
+ * In dev mode, uses mock API instead
  */
 export const enhanceSceneWithAI = async (
-  request: ImageToImageRequest
+  request: ImageToImageRequest,
+  isDevMode: boolean = false
 ): Promise<ImageToImageResponse> => {
+  // Use mock API in dev mode
+  if (isDevMode) {
+    return await mockEnhanceSceneWithAI(request.baseImage, request.prompt);
+  }
   const { geminiApiKey } = getAPIKeys();
   
   if (!geminiApiKey) {

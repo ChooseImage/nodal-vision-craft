@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { DataSchemas } from '../NodeEditor';
 import { useNodeData } from '../NodeDataContext';
 import { enhanceSceneWithAI } from '@/utils/genAI';
+import { useDevMode } from '@/contexts/DevModeContext';
 
 interface AIEnhancedImageData {
   label: string;
@@ -15,6 +16,7 @@ interface AIEnhancedImageData {
 export const AIEnhancedImageCard: React.FC<NodeProps<AIEnhancedImageData>> = ({ data, id }) => {
   const { getNodeData, subscribeToNode, updateNodeData } = useNodeData();
   const { setNodes, setEdges, getNodes, getEdges } = useReactFlow();
+  const { isDevMode } = useDevMode();
   const edges = useEdges();
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhancedImage, setEnhancedImage] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export const AIEnhancedImageCard: React.FC<NodeProps<AIEnhancedImageData>> = ({ 
         baseImage: imageToEnhance,
         prompt: 'Make this image look photorealistic, and all the objects and background environments fit together seamlessly. Enhance the lighting, materials, and overall visual quality to create a stunning, realistic render.',
         provider: 'gemini',
-      });
+      }, isDevMode);
 
       if (result.success && result.imageUrl) {
         setEnhancedImage(result.imageUrl);

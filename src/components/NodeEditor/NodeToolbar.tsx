@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Box, Image, Palette, Sparkles, Play, Monitor } from 'lucide-react';
+import { Plus, Box, Image, Palette, Sparkles, Play, Monitor, Zap } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,13 +8,18 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { APIKeyModal } from '@/components/APIKeyModal';
+import { useDevMode } from '@/contexts/DevModeContext';
 
 interface NodeToolbarProps {
   onAddNode: (type: string, position: { x: number; y: number }) => void;
 }
 
 export const NodeToolbar: React.FC<NodeToolbarProps> = ({ onAddNode }) => {
+  const { isDevMode, setDevMode } = useDevMode();
+  
   const handleAddNode = (type: string) => {
     // Add node at center of current view
     const position = { x: 400, y: 300 };
@@ -28,6 +33,22 @@ export const NodeToolbar: React.FC<NodeToolbarProps> = ({ onAddNode }) => {
       </div>
       
       <APIKeyModal />
+
+      {/* Dev Mode Toggle */}
+      <div className="glass rounded-lg p-2 border flex items-center gap-2">
+        <Switch
+          id="dev-mode"
+          checked={isDevMode}
+          onCheckedChange={setDevMode}
+        />
+        <Label 
+          htmlFor="dev-mode" 
+          className="text-sm cursor-pointer flex items-center gap-1"
+        >
+          <Zap className={`w-3 h-3 ${isDevMode ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+          Dev Mode
+        </Label>
+      </div>
       
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
