@@ -5,6 +5,7 @@ import { Video, Play } from 'lucide-react';
 import { DataSchemas } from '../NodeEditor';
 import { useNodeData } from '../NodeDataContext';
 import { generateVideoFromImage } from '@/utils/genAI';
+import { useDevMode } from '@/contexts/DevModeContext';
 
 interface GenAIClipData {
   label: string;
@@ -14,6 +15,7 @@ interface GenAIClipData {
 
 export const GenAIClipCard: React.FC<NodeProps<GenAIClipData>> = ({ data, id }) => {
   const { updateNodeData } = useNodeData();
+  const { isDevMode } = useDevMode();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedVideo, setGeneratedVideo] = useState<string | null>(null);
 
@@ -31,8 +33,8 @@ export const GenAIClipCard: React.FC<NodeProps<GenAIClipData>> = ({ data, id }) 
       const result = await generateVideoFromImage({
         baseImage: image,
         prompt: prompt,
-        provider: 'mock',
-      });
+        provider: 'replicate',
+      }, isDevMode);
 
       if (result.success && result.videoUrl) {
         setGeneratedVideo(result.videoUrl);

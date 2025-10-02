@@ -27,7 +27,7 @@ export interface TextToImageResponse {
 export interface ImageToVideoRequest {
   baseImage: string; // base64 encoded image or data URL
   prompt: string;
-  provider?: 'mock'; // Using mock for now
+  provider?: 'replicate' | 'mock';
 }
 
 export interface ImageToVideoResponse {
@@ -417,26 +417,41 @@ const generateWithGemini = async (
 };
 
 /**
- * Generate a video from an image using AI (Mock implementation)
- * This simulates video generation with a delay and returns a mock video
+ * Convert base64 data URL to Blob URL
  */
-export const generateVideoFromImage = async (
+const dataUrlToBlobUrl = (dataUrl: string): string => {
+  const arr = dataUrl.split(',');
+  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  const blob = new Blob([u8arr], { type: mime });
+  return URL.createObjectURL(blob);
+};
+
+/**
+ * Mock video generation for dev mode
+ */
+const mockGenerateVideoFromImage = async (
   request: ImageToVideoRequest
 ): Promise<ImageToVideoResponse> => {
-  console.log('🎬 Generating video from image with prompt:', request.prompt);
+  console.log('🎬 Using MOCK API for video generation (Dev Mode)');
+  console.log('🎬 Mock video prompt:', request.prompt);
   
   try {
     // Simulate API delay (3-4 seconds)
     await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 1000));
     
     // Mock video URL - using a sample video from the web
-    // In production, this would be replaced with actual API call
     const mockVideoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
     
-    console.log('🎬 Video generation successful (mock)');
+    console.log('🎬 Mock video generation successful');
     toast({
-      title: 'Video Generated!',
-      description: 'Your AI video clip is ready',
+      title: 'Video Generated! (Mock)',
+      description: 'Dev mode: Using mock video generation',
     });
     
     return {
@@ -444,12 +459,12 @@ export const generateVideoFromImage = async (
       success: true,
     };
   } catch (error) {
-    console.error('🎬 Video generation failed:', error);
+    console.error('🎬 Mock video generation failed:', error);
     
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     toast({
-      title: 'Video Generation Failed',
+      title: 'Mock Video Generation Failed',
       description: errorMessage,
       variant: 'destructive',
     });
@@ -460,4 +475,202 @@ export const generateVideoFromImage = async (
       error: errorMessage,
     };
   }
+};
+
+/**
+ * Upload image to Replicate's file storage
+ */
+const uploadImageToReplicate = async (
+  dataUrl: string,
+  apiKey: string
+): Promise<string> => {
+  // Convert data URL to Blob
+  const arr = dataUrl.split(',');
+  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  const blob = new Blob([u8arr], { type: mime });
+  
+  // Create form data
+  const formData = new FormData();
+  formData.append('content', blob, 'image.png');
+  
+  // Upload to Replicate
+  const uploadResponse = await fetch('https://api.replicate.com/v1/files', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: formData,
+  });
+  
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    throw new Error(`Failed to upload image: ${uploadResponse.status} - ${errorText}`);
+  }
+  
+  const uploadData = await uploadResponse.json();
+  console.log('🎬 Image uploaded to Replicate:', uploadData.urls.get);
+  
+  return uploadData.urls.get;
+};
+
+/**
+ * Generate video using Replicate's bytedance/seedance-1-lite model
+ */
+const generateVideoWithReplicate = async (
+  request: ImageToVideoRequest
+): Promise<ImageToVideoResponse> => {
+  const { replicateApiKey } = getAPIKeys();
+  
+  if (!replicateApiKey) {
+    toast({
+      title: 'API Key Missing',
+      description: 'Please add your Replicate API key in settings',
+      variant: 'destructive',
+    });
+    return {
+      videoUrl: '',
+      success: false,
+      error: 'Replicate API key not found',
+    };
+  }
+
+  console.log('🎬 Using Replicate bytedance/seedance-1-lite for video generation');
+  console.log('🎬 Video prompt:', request.prompt);
+  
+  try {
+    // Upload image to Replicate if it's a data URL
+    let imageUrl: string;
+    if (request.baseImage.startsWith('data:')) {
+      console.log('🎬 Uploading image to Replicate...');
+      imageUrl = await uploadImageToReplicate(request.baseImage, replicateApiKey);
+    } else {
+      imageUrl = request.baseImage;
+    }
+    
+    // Create prediction
+    const createResponse = await fetch('https://api.replicate.com/v1/models/bytedance/seedance-1-lite/predictions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${replicateApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        input: {
+          image: imageUrl,
+          prompt: request.prompt,
+          fps: 24,
+          duration: 5,
+          resolution: '720p',
+          aspect_ratio: '16:9',
+          camera_fixed: false,
+        },
+      }),
+    });
+
+    if (!createResponse.ok) {
+      const errorText = await createResponse.text();
+      console.error('🎬 Replicate API error:', errorText);
+      throw new Error(`Replicate API error: ${createResponse.status} - ${errorText}`);
+    }
+
+    const prediction = await createResponse.json();
+    console.log('🎬 Prediction created:', prediction.id);
+
+    // Poll for completion
+    let pollCount = 0;
+    const maxPolls = 60; // 5 minutes max (5 second intervals)
+    
+    while (pollCount < maxPolls) {
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+      
+      const pollResponse = await fetch(
+        `https://api.replicate.com/v1/predictions/${prediction.id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${replicateApiKey}`,
+          },
+        }
+      );
+
+      if (!pollResponse.ok) {
+        throw new Error(`Failed to poll prediction: ${pollResponse.status}`);
+      }
+
+      const pollData = await pollResponse.json();
+      console.log('🎬 Prediction status:', pollData.status);
+
+      if (pollData.status === 'succeeded') {
+        const videoUrl = pollData.output;
+        
+        console.log('🎬 Video generation successful');
+        toast({
+          title: 'Video Generated!',
+          description: 'Your AI video clip is ready',
+        });
+
+        return {
+          videoUrl,
+          success: true,
+        };
+      } else if (pollData.status === 'failed' || pollData.status === 'canceled') {
+        throw new Error(`Video generation ${pollData.status}: ${pollData.error || 'Unknown error'}`);
+      }
+
+      pollCount++;
+    }
+
+    throw new Error('Video generation timed out');
+  } catch (error) {
+    console.error('🎬 Replicate video generation failed:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    toast({
+      title: 'Video Generation Failed',
+      description: errorMessage,
+      variant: 'destructive',
+    });
+
+    return {
+      videoUrl: '',
+      success: false,
+      error: errorMessage,
+    };
+  }
+};
+
+/**
+ * Generate a video from an image using AI
+ * Uses mock implementation in dev mode, Replicate API in production
+ */
+export const generateVideoFromImage = async (
+  request: ImageToVideoRequest,
+  isDevMode: boolean = false
+): Promise<ImageToVideoResponse> => {
+  // Use mock API in dev mode
+  if (isDevMode) {
+    return await mockGenerateVideoFromImage(request);
+  }
+
+  const provider = request.provider || 'replicate';
+
+  if (provider === 'replicate') {
+    return await generateVideoWithReplicate(request);
+  }
+
+  if (provider === 'mock') {
+    return await mockGenerateVideoFromImage(request);
+  }
+
+  return {
+    videoUrl: '',
+    success: false,
+    error: `Provider ${provider} not implemented`,
+  };
 };
