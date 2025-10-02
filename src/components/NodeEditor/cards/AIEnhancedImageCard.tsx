@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { NodeProps, useEdges } from 'reactflow';
+import { NodeProps, useEdges, useReactFlow } from 'reactflow';
 import { BaseCard } from './BaseCard';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Video } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { DataSchemas } from '../NodeEditor';
 import { useNodeData } from '../NodeDataContext';
 import { enhanceSceneWithAI } from '@/utils/genAI';
@@ -12,10 +14,13 @@ interface AIEnhancedImageData {
 
 export const AIEnhancedImageCard: React.FC<NodeProps<AIEnhancedImageData>> = ({ data, id }) => {
   const { getNodeData, subscribeToNode, updateNodeData } = useNodeData();
+  const { setNodes, setEdges, getNodes, getEdges } = useReactFlow();
   const edges = useEdges();
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhancedImage, setEnhancedImage] = useState<string | null>(null);
   const [baseImage, setBaseImage] = useState<string | null>(null);
+  const [showVideoPrompt, setShowVideoPrompt] = useState(false);
+  const [videoPrompt, setVideoPrompt] = useState('');
   const lastProcessedImageRef = useRef<string | null>(null);
   const isEnhancingRef = useRef(false);
 
@@ -58,6 +63,47 @@ export const AIEnhancedImageCard: React.FC<NodeProps<AIEnhancedImageData>> = ({ 
       setIsEnhancing(false);
     }
   }, [id, updateNodeData]);
+
+  const handleGenerateVideo = useCallback(() => {
+    if (!enhancedImage || !videoPrompt.trim() || !id) return;
+
+    const nodes = getNodes();
+    const currentNode = nodes.find(n => n.id === id);
+    if (!currentNode) return;
+
+    // Create new GenAIClip node
+    const newNodeId = `genai-clip-${Date.now()}`;
+    const newNode = {
+      id: newNodeId,
+      type: 'genAIClip',
+      position: {
+        x: currentNode.position.x + 400,
+        y: currentNode.position.y,
+      },
+      data: {
+        label: 'GenAI Clip',
+        sourceImage: enhancedImage,
+        videoPrompt: videoPrompt,
+      },
+    };
+
+    // Create edge connecting this node to the new GenAIClip node
+    const newEdge = {
+      id: `edge-${id}-${newNodeId}`,
+      source: id,
+      target: newNodeId,
+      sourceHandle: 'enhanced-image-output',
+      targetHandle: 'enhanced-image-input',
+    };
+
+    // Add the new node and edge
+    setNodes((nds) => [...nds, newNode]);
+    setEdges((eds) => [...eds, newEdge]);
+
+    // Reset video prompt UI
+    setVideoPrompt('');
+    setShowVideoPrompt(false);
+  }, [enhancedImage, videoPrompt, id, getNodes, setNodes, setEdges]);
 
   // Listen for incoming rendered image from connected nodes
   useEffect(() => {
@@ -174,6 +220,40 @@ export const AIEnhancedImageCard: React.FC<NodeProps<AIEnhancedImageData>> = ({ 
                 Photorealistic
               </div>
             </div>
+
+            {/* Generate Video Button */}
+            {!showVideoPrompt && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => setShowVideoPrompt(true)}
+              >
+                <Video className="w-4 h-4" />
+                Generate Video
+              </Button>
+            )}
+
+            {/* Video Prompt Input */}
+            {showVideoPrompt && (
+              <div className="space-y-2">
+                <Input
+                  placeholder="Text prompt (e.g., 'camera slowly zooms in')"
+                  value={videoPrompt}
+                  onChange={(e) => setVideoPrompt(e.target.value)}
+                  className="text-xs"
+                />
+                <Button
+                  size="sm"
+                  className="w-full gap-2"
+                  onClick={handleGenerateVideo}
+                  disabled={!videoPrompt.trim()}
+                >
+                  <Video className="w-4 h-4" />
+                  Generate
+                </Button>
+              </div>
+            )}
           </div>
         )}
 

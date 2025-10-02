@@ -24,6 +24,18 @@ export interface TextToImageResponse {
   error?: string;
 }
 
+export interface ImageToVideoRequest {
+  baseImage: string; // base64 encoded image or data URL
+  prompt: string;
+  provider?: 'mock'; // Using mock for now
+}
+
+export interface ImageToVideoResponse {
+  videoUrl: string; // data URL or URL of the generated video
+  success: boolean;
+  error?: string;
+}
+
 /**
  * Convert a data URL to base64 string (removes the data:image/png;base64, prefix)
  */
@@ -313,6 +325,52 @@ const generateWithGemini = async (
 
     return {
       imageUrl: '',
+      success: false,
+      error: errorMessage,
+    };
+  }
+};
+
+/**
+ * Generate a video from an image using AI (Mock implementation)
+ * This simulates video generation with a delay and returns a mock video
+ */
+export const generateVideoFromImage = async (
+  request: ImageToVideoRequest
+): Promise<ImageToVideoResponse> => {
+  console.log('🎬 Generating video from image with prompt:', request.prompt);
+  
+  try {
+    // Simulate API delay (3-4 seconds)
+    await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 1000));
+    
+    // Mock video URL - using a sample video from the web
+    // In production, this would be replaced with actual API call
+    const mockVideoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+    
+    console.log('🎬 Video generation successful (mock)');
+    toast({
+      title: 'Video Generated!',
+      description: 'Your AI video clip is ready',
+    });
+    
+    return {
+      videoUrl: mockVideoUrl,
+      success: true,
+    };
+  } catch (error) {
+    console.error('🎬 Video generation failed:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    toast({
+      title: 'Video Generation Failed',
+      description: errorMessage,
+      variant: 'destructive',
+    });
+    
+    return {
+      videoUrl: '',
       success: false,
       error: errorMessage,
     };

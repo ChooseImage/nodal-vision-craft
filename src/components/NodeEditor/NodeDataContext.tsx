@@ -6,6 +6,7 @@ export interface NodeData {
   skyboxTexture?: THREE.Texture | string;
   renderedImage?: string;
   enhancedImage?: string;
+  generatedVideo?: string;
   timestamp?: number;
 }
 

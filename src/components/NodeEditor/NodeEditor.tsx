@@ -21,6 +21,7 @@ import { AIImageEnhancerCard } from './cards/AIImageEnhancerCard';
 import { AIEnhancedImageCard } from './cards/AIEnhancedImageCard';
 import { AIVideoGeneratorCard } from './cards/AIVideoGeneratorCard';
 import { VideoPlayerCard } from './cards/VideoPlayerCard';
+import { GenAIClipCard } from './cards/GenAIClipCard';
 import { NodeToolbar } from './NodeToolbar';
 import { ContextMenu } from './ContextMenu';
 import { NodeDataProvider } from './NodeDataContext';
@@ -34,6 +35,7 @@ const nodeTypes = {
   aiEnhancedImage: AIEnhancedImageCard,
   aiVideoGenerator: AIVideoGeneratorCard,
   videoPlayer: VideoPlayerCard,
+  genAIClip: GenAIClipCard,
 };
 
 // Schema definitions for type checking
