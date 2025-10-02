@@ -215,4 +215,48 @@
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground));
   }
+
+  /* Gradient shader animations for AI Enhanced Image loading state */
+  @keyframes gradient-shift {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translate(10%, 10%) scale(1.1);
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes gradient-shift-reverse {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+      opacity: 0.4;
+    }
+    50% {
+      transform: translate(-10%, -10%) scale(1.1);
+      opacity: 0.6;
+    }
+  }
+
+  .animate-gradient-shift {
+    animation: gradient-shift 4s ease-in-out infinite;
+  }
+
+  .animate-gradient-shift-reverse {
+    animation: gradient-shift-reverse 4s ease-in-out infinite;
+  }
+
+  /* Delay utilities for skeleton loading */
+  .delay-75 {
+    animation-delay: 75ms;
+  }
+
+  .delay-150 {
+    animation-delay: 150ms;
+  }
+
+  .delay-225 {
+    animation-delay: 225ms;
+  }
 }

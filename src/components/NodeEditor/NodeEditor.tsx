@@ -18,6 +18,7 @@ import { ModelLoaderCard } from './cards/ModelLoaderCard';
 import { SkyboxGeneratorCard } from './cards/SkyboxGeneratorCard';
 import { SceneRendererCard } from './cards/SceneRendererCard';
 import { AIImageEnhancerCard } from './cards/AIImageEnhancerCard';
+import { AIEnhancedImageCard } from './cards/AIEnhancedImageCard';
 import { AIVideoGeneratorCard } from './cards/AIVideoGeneratorCard';
 import { VideoPlayerCard } from './cards/VideoPlayerCard';
 import { NodeToolbar } from './NodeToolbar';
@@ -30,6 +31,7 @@ const nodeTypes = {
   skyboxGenerator: SkyboxGeneratorCard,
   sceneRenderer: SceneRendererCard,
   aiImageEnhancer: AIImageEnhancerCard,
+  aiEnhancedImage: AIEnhancedImageCard,
   aiVideoGenerator: AIVideoGeneratorCard,
   videoPlayer: VideoPlayerCard,
 };

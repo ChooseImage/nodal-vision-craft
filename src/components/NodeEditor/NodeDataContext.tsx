@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import * as THREE from 'three';
 
 export interface NodeData {
   model?: THREE.Object3D;
   skyboxTexture?: THREE.Texture | string;
   renderedImage?: string;
+  enhancedImage?: string;
   timestamp?: number;
 }
 
@@ -31,7 +32,7 @@ interface NodeDataProviderProps {
 
 export const NodeDataProvider: React.FC<NodeDataProviderProps> = ({ children }) => {
   const [nodeData, setNodeData] = useState<Record<string, NodeData>>({});
-  const [subscribers, setSubscribers] = useState<Record<string, ((data: NodeData) => void)[]>>({});
+  const subscribersRef = useRef<Record<string, ((data: NodeData) => void)[]>>({});
 
   const updateNodeData = useCallback((nodeId: string, data: Partial<NodeData>) => {
     setNodeData(prev => {
@@ -41,8 +42,8 @@ export const NodeDataProvider: React.FC<NodeDataProviderProps> = ({ children }) 
         timestamp: Date.now()
       };
       
-      // Notify subscribers
-      const nodeSubscribers = subscribers[nodeId] || [];
+      // Notify subscribers using ref
+      const nodeSubscribers = subscribersRef.current[nodeId] || [];
       nodeSubscribers.forEach(callback => callback(newData));
       
       return {
@@ -50,24 +51,22 @@ export const NodeDataProvider: React.FC<NodeDataProviderProps> = ({ children }) 
         [nodeId]: newData
       };
     });
-  }, [subscribers]);
+  }, []);
 
   const getNodeData = useCallback((nodeId: string) => {
     return nodeData[nodeId];
   }, [nodeData]);
 
   const subscribeToNode = useCallback((nodeId: string, callback: (data: NodeData) => void) => {
-    setSubscribers(prev => ({
-      ...prev,
-      [nodeId]: [...(prev[nodeId] || []), callback]
-    }));
+    // Add subscriber using ref
+    if (!subscribersRef.current[nodeId]) {
+      subscribersRef.current[nodeId] = [];
+    }
+    subscribersRef.current[nodeId].push(callback);
 
     // Return unsubscribe function
     return () => {
-      setSubscribers(prev => ({
-        ...prev,
-        [nodeId]: (prev[nodeId] || []).filter(cb => cb !== callback)
-      }));
+      subscribersRef.current[nodeId] = (subscribersRef.current[nodeId] || []).filter(cb => cb !== callback);
     };
   }, []);
 

@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Palette, RefreshCw, Sparkles } from 'lucide-react';
 import { DataSchemas } from '../NodeEditor';
 import { useNodeData } from '../NodeDataContext';
-import { enhanceSceneWithAI } from '@/utils/genAI';
 import * as THREE from 'three';
 
 interface SceneRendererData {
@@ -13,12 +12,11 @@ interface SceneRendererData {
 }
 
 export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data, id }) => {
-  const { getNodeData, subscribeToNode } = useNodeData();
+  const { getNodeData, subscribeToNode, updateNodeData } = useNodeData();
+  const reactFlowInstance = useReactFlow();
   const edges = useEdges();
   const [isRendering, setIsRendering] = useState(false);
-  const [isEnhancing, setIsEnhancing] = useState(false);
   const [lastRender, setLastRender] = useState<string | null>(null);
-  const [enhancedRender, setEnhancedRender] = useState<string | null>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene>();
   const rendererRef = useRef<THREE.WebGLRenderer>();
@@ -380,45 +378,59 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
   }, []);
 
   const handleRender = async () => {
-    if (!rendererRef.current || !sceneRef.current || !cameraRef.current) return;
+    if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !id) return;
 
     setIsRendering(true);
-    setEnhancedRender(null); // Clear previous enhancement
     
     // Capture the scene
     const snapshot = captureSceneSnapshot();
     
     if (snapshot) {
       setLastRender(snapshot);
+      
+      // Update node data so connected nodes can access the rendered image
+      updateNodeData(id, {
+        renderedImage: snapshot,
+      });
     }
     
     setIsRendering(false);
   };
 
   const handleEnhanceWithAI = async () => {
-    if (!lastRender) {
+    if (!lastRender || !id) {
       console.warn('No render available to enhance. Please render the scene first.');
       return;
     }
 
-    setIsEnhancing(true);
+    // Get current node position
+    const currentNode = reactFlowInstance.getNode(id);
+    if (!currentNode) return;
 
-    try {
-      // Use Gemini 2.5 Flash Image to make the scene photorealistic
-      const result = await enhanceSceneWithAI({
-        baseImage: lastRender,
-        prompt: 'Make this image look photorealistic, and all the objects and background environments fit together seamlessly. Enhance the lighting, materials, and overall visual quality to create a stunning, realistic render.',
-        provider: 'gemini',
-      });
+    // Create new AI Enhanced Image card
+    const newNodeId = `ai-enhanced-${Date.now()}`;
+    const newNode = {
+      id: newNodeId,
+      type: 'aiEnhancedImage',
+      position: {
+        x: currentNode.position.x + 400, // Position to the right
+        y: currentNode.position.y,
+      },
+      data: { label: 'AI Enhanced Image' },
+    };
 
-      if (result.success) {
-        setEnhancedRender(result.imageUrl);
-      }
-    } catch (error) {
-      console.error('Failed to enhance scene:', error);
-    } finally {
-      setIsEnhancing(false);
-    }
+    // Create edge connecting this node's output to the new node's input
+    const newEdge = {
+      id: `edge-${id}-${newNodeId}`,
+      source: id,
+      target: newNodeId,
+      sourceHandle: 'render-output',
+      targetHandle: 'rendered-image-input',
+    };
+
+    // Add the new node and edge to the flow
+    reactFlowInstance.setNodes((nodes) => [...nodes, newNode]);
+    reactFlowInstance.setEdges((edges) => [...edges, newEdge]);
   };
 
   const inputs = [
@@ -470,11 +482,10 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
               size="sm" 
               className="w-full gap-2"
               onClick={handleEnhanceWithAI}
-              disabled={isEnhancing}
               variant="secondary"
             >
-              <Sparkles className={`w-4 h-4 ${isEnhancing ? 'animate-pulse' : ''}`} />
-              {isEnhancing ? 'Enhancing with AI...' : 'Make Photorealistic'}
+              <Sparkles className="w-4 h-4" />
+              Enhance with AI
             </Button>
           )}
         </div>
@@ -497,7 +508,7 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
         {lastRender && (
           <div className="space-y-2">
             <div className="text-xs font-medium text-port-image">
-              {enhancedRender ? 'Original Render' : 'Rendered Output'}
+              Rendered Output
             </div>
             <div className="relative bg-muted rounded-lg overflow-hidden">
               <img
@@ -506,28 +517,7 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
                 className="w-full object-cover"
               />
               <div className="absolute bottom-1 right-1 text-xs text-white bg-black/50 px-1 rounded">
-                {enhancedRender ? 'Original' : 'Final Render'}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* AI Enhanced Output */}
-        {enhancedRender && (
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-port-image flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
-              AI Enhanced (Photorealistic)
-            </div>
-            <div className="relative bg-muted rounded-lg overflow-hidden">
-              <img
-                src={enhancedRender}
-                alt="AI enhanced scene"
-                className="w-full object-cover"
-              />
-              <div className="absolute bottom-1 right-1 text-xs text-white bg-black/50 px-1 rounded flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                Photorealistic
+                Rendered
               </div>
             </div>
           </div>
