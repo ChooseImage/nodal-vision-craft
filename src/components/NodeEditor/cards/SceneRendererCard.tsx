@@ -444,7 +444,7 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
               <img
                 src={lastRender}
                 alt="Rendered scene"
-                className="w-full h-32 object-cover"
+                className="w-full object-cover"
               />
               <div className="absolute bottom-1 right-1 text-xs text-white bg-black/50 px-1 rounded">
                 {enhancedRender ? 'Original' : 'Final Render'}
@@ -464,7 +464,7 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
               <img
                 src={enhancedRender}
                 alt="AI enhanced scene"
-                className="w-full h-32 object-cover"
+                className="w-full object-cover"
               />
               <div className="absolute bottom-1 right-1 text-xs text-white bg-black/50 px-1 rounded flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
