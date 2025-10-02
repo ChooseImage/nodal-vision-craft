@@ -221,11 +221,6 @@
     position: absolute;
   }
 
-  .react-flow__node .react-flow__handle-left,
-  .react-flow__node .react-flow__handle-right {
-    top: auto !important;
-  }
-
   /* Port type colors */
   .port-model {
     background: hsl(var(--port-model));
