@@ -246,12 +246,7 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
 
     // Publish model data to other nodes
     if (id) {
-      console.log('[ModelLoader] Publishing model data for node:', id);
-      console.log('[ModelLoader] Model object:', model);
       updateNodeData(id, { model: model.clone() });
-      console.log('[ModelLoader] Model data published successfully');
-    } else {
-      console.log('[ModelLoader] ⚠️ No ID available, cannot publish model data');
     }
   };
 
@@ -330,10 +325,8 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
     try {
       const model = await loadModel(file);
       addModelToScene(model);
-      console.log('File uploaded successfully:', file.name);
       setIsLoading(false);
     } catch (error) {
-      console.error('Error processing file:', error);
       setUploadError('Failed to process the 3D model file.');
       setIsLoading(false);
       setFileName('Default Cube');
