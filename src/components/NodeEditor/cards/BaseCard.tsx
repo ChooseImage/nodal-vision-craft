@@ -50,7 +50,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({
   };
 
   return (
-    <Card className="min-w-80 max-w-96 glass border-node-border hover:border-primary/30 transition-all duration-300 relative">
+    <div className="relative w-full h-full">
       {/* Input Handles */}
       {inputs.map((input, index) => {
         const connected = isHandleConnected(input.id, 'target');
@@ -62,7 +62,8 @@ export const BaseCard: React.FC<BaseCardProps> = ({
             id={input.id}
             className={`${getPortColor(input.schema)} ${connected ? 'connected' : ''}`}
             style={{
-              top: `${24 + (index * 24)}px`,
+              top: `${24 + (index * 40)}px`,
+              zIndex: 10,
             }}
             title={`${input.label} (${input.schema})`}
           />
@@ -80,14 +81,16 @@ export const BaseCard: React.FC<BaseCardProps> = ({
             id={output.id}
             className={`${getPortColor(output.schema)} ${connected ? 'connected' : ''}`}
             style={{
-              top: `${24 + (index * 24)}px`,
+              top: `${24 + (index * 40)}px`,
+              zIndex: 10,
             }}
             title={`${output.label} (${output.schema})`}
           />
         );
       })}
 
-      <CardHeader className="pb-3">
+      <Card className="min-w-80 max-w-96 glass border-node-border hover:border-primary/30 transition-all duration-300">
+        <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             {icon}
@@ -106,9 +109,10 @@ export const BaseCard: React.FC<BaseCardProps> = ({
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0">
-        {children}
-      </CardContent>
-    </Card>
+        <CardContent className="pt-0">
+          {children}
+        </CardContent>
+      </Card>
+    </div>
   );
 };

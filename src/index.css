@@ -216,6 +216,16 @@
     right: -8px;
   }
 
+  /* Override handle positioning to align with Card component */
+  .react-flow__node .react-flow__handle {
+    position: absolute;
+  }
+
+  .react-flow__node .react-flow__handle-left,
+  .react-flow__node .react-flow__handle-right {
+    top: auto !important;
+  }
+
   /* Port type colors */
   .port-model {
     background: hsl(var(--port-model));
