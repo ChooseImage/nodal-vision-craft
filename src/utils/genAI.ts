@@ -231,9 +231,9 @@ const generateWithGemini = async (
   try {
     console.log('🎨 Gemini generation prompt:', prompt);
     
-    // Call Gemini 2.5 Flash Image API with streaming
+    // Call Gemini 2.5 Flash Image API
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:streamGenerateContent?key=${apiKey}&alt=sse`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {
@@ -267,55 +267,24 @@ const generateWithGemini = async (
       throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
     }
 
-    // Process the streaming response
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error('No response body reader available');
+    const data = await response.json();
+    console.log('🎨 Gemini text-to-image response received');
+
+    // Extract image data from response
+    const candidate = data.candidates?.[0];
+    if (!candidate) {
+      throw new Error('No candidates in Gemini response');
     }
 
-    const decoder = new TextDecoder();
+    // Look for inline image data in the response
     let imageUrl: string | null = null;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const jsonData = JSON.parse(line.slice(6));
-            
-            // Check for image data in the chunk
-            const candidate = jsonData.candidates?.[0];
-            if (candidate?.content?.parts) {
-              for (const part of candidate.content.parts) {
-                if (part.inlineData && part.inlineData.mimeType?.startsWith('image/')) {
-                  // Convert base64 to data URL
-                  imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-                  console.log('🎨 Image data found in stream');
-                  break;
-                }
-              }
-            }
-
-            // If we found an image, we can stop processing
-            if (imageUrl) break;
-          } catch (e) {
-            // Skip invalid JSON lines
-            continue;
-          }
-        }
+    for (const part of candidate.content.parts) {
+      if (part.inlineData && part.inlineData.mimeType?.startsWith('image/')) {
+        // Convert base64 to data URL
+        imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+        break;
       }
-
-      // If we found an image, we can stop reading
-      if (imageUrl) break;
     }
-
-    // Cancel the reader if we're done early
-    reader.cancel();
 
     if (!imageUrl) {
       throw new Error('No image data found in Gemini response');

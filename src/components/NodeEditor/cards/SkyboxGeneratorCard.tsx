@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Image, Upload, Sparkles, Palette } from 'lucide-react';
 import { DataSchemas } from '../NodeEditor';
 import { useNodeData } from '../NodeDataContext';
-import { generateSkyboxImage } from '@/utils/geminiAPI';
+import { generateImageWithAI } from '@/utils/genAI';
 import { useToast } from '@/hooks/use-toast';
 
 interface SkyboxGeneratorData {
@@ -29,7 +29,12 @@ export const SkyboxGeneratorCard: React.FC<NodeProps<SkyboxGeneratorData>> = ({ 
     setIsGenerating(true);
     
     try {
-      const result = await generateSkyboxImage(prompt);
+      // Construct a comprehensive prompt with skybox-specific instructions
+      const systemPrompt = "Generate a high-resolution, 360-degree equirectangular panorama image suitable for use as an HDRI skybox in a 3D rendering environment. The image should have seamless edges for proper spherical wrapping, realistic lighting, and atmospheric effects. The projection should be in equirectangular format (2:1 aspect ratio) that can be mapped onto a sphere. Create the following environment: ";
+      const fullPrompt = systemPrompt + prompt;
+      
+      const result = await generateImageWithAI({ prompt: fullPrompt });
+      
       if (result.success) {
         setPreviewImage(result.imageUrl);
         
