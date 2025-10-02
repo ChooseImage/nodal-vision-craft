@@ -1,5 +1,5 @@
 import React from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, useEdges, useNodeId } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,39 +34,58 @@ export const BaseCard: React.FC<BaseCardProps> = ({
   outputs = [],
   onDelete,
 }) => {
+  const edges = useEdges();
+  const nodeId = useNodeId();
+  
+  // Helper function to check if a handle has connections
+  const isHandleConnected = (handleId: string, handleType: 'source' | 'target'): boolean => {
+    if (!nodeId) return false;
+    return edges.some(edge => {
+      if (handleType === 'source') {
+        return edge.source === nodeId && edge.sourceHandle === handleId;
+      } else {
+        return edge.target === nodeId && edge.targetHandle === handleId;
+      }
+    });
+  };
+
   return (
     <Card className="min-w-80 max-w-96 glass border-node-border hover:border-primary/30 transition-all duration-300 relative">
       {/* Input Handles */}
-      {inputs.map((input, index) => (
-        <Handle
-          key={input.id}
-          type="target"
-          position={Position.Left}
-          id={input.id}
-          className={`${getPortColor(input.schema)} border-2 border-background`}
-          style={{
-            top: `${20 + (index * 30)}px`,
-            left: '-6px',
-          }}
-          title={`${input.label} (${input.schema})`}
-        />
-      ))}
+      {inputs.map((input, index) => {
+        const connected = isHandleConnected(input.id, 'target');
+        return (
+          <Handle
+            key={input.id}
+            type="target"
+            position={Position.Left}
+            id={input.id}
+            className={`${getPortColor(input.schema)} ${connected ? 'connected' : ''}`}
+            style={{
+              top: `${24 + (index * 24)}px`,
+            }}
+            title={`${input.label} (${input.schema})`}
+          />
+        );
+      })}
 
       {/* Output Handles */}
-      {outputs.map((output, index) => (
-        <Handle
-          key={output.id}
-          type="source"
-          position={Position.Right}
-          id={output.id}
-          className={`${getPortColor(output.schema)} border-2 border-background`}
-          style={{
-            top: `${20 + (index * 30)}px`,
-            right: '-6px',
-          }}
-          title={`${output.label} (${output.schema})`}
-        />
-      ))}
+      {outputs.map((output, index) => {
+        const connected = isHandleConnected(output.id, 'source');
+        return (
+          <Handle
+            key={output.id}
+            type="source"
+            position={Position.Right}
+            id={output.id}
+            className={`${getPortColor(output.schema)} ${connected ? 'connected' : ''}`}
+            style={{
+              top: `${24 + (index * 24)}px`,
+            }}
+            title={`${output.label} (${output.schema})`}
+          />
+        );
+      })}
 
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
