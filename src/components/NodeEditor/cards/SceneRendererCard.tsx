@@ -27,6 +27,7 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
   const currentModelRef = useRef<THREE.Object3D | null>(null);
   const defaultCubeRef = useRef<THREE.Mesh | null>(null);
   const controlsRef = useRef<(() => void) | null>(null);
+  const skyboxSphereRef = useRef<THREE.Mesh | null>(null);
 
   // Initialize Three.js scene
   useEffect(() => {
@@ -34,8 +35,9 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
 
     // Scene setup
     const scene = new THREE.Scene();
-    
-    // Add skybox (simple gradient background)
+    sceneRef.current = scene;
+
+    // Create skybox dome with default gradient texture
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 512;
@@ -48,9 +50,18 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
     context.fillStyle = gradient;
     context.fillRect(0, 0, 512, 512);
     
-    const texture = new THREE.CanvasTexture(canvas);
-    scene.background = texture;
-    sceneRef.current = scene;
+    const defaultTexture = new THREE.CanvasTexture(canvas);
+    
+    // Create skybox sphere (dome)
+    const skyboxGeometry = new THREE.SphereGeometry(500, 60, 40);
+    const skyboxMaterial = new THREE.MeshBasicMaterial({
+      map: defaultTexture,
+      side: THREE.BackSide, // Render inside of sphere
+    });
+    const skyboxSphere = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
+    skyboxSphere.renderOrder = -1; // Render first (behind everything)
+    scene.add(skyboxSphere);
+    skyboxSphereRef.current = skyboxSphere;
 
     // Camera setup
     const camera = new THREE.PerspectiveCamera(
@@ -245,17 +256,21 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
   }, [removeCurrentModel]);
 
   const updateSkybox = useCallback((skyboxTexture: THREE.Texture | string) => {
-    if (!sceneRef.current) return;
+    if (!skyboxSphereRef.current) return;
 
     if (typeof skyboxTexture === 'string') {
       // Load texture from URL
       const loader = new THREE.TextureLoader();
       loader.load(skyboxTexture, (texture) => {
-        sceneRef.current!.background = texture;
+        if (skyboxSphereRef.current) {
+          (skyboxSphereRef.current.material as THREE.MeshBasicMaterial).map = texture;
+          (skyboxSphereRef.current.material as THREE.MeshBasicMaterial).needsUpdate = true;
+        }
       });
     } else {
       // Use provided texture
-      sceneRef.current.background = skyboxTexture;
+      (skyboxSphereRef.current.material as THREE.MeshBasicMaterial).map = skyboxTexture;
+      (skyboxSphereRef.current.material as THREE.MeshBasicMaterial).needsUpdate = true;
     }
   }, []);
 
@@ -348,7 +363,7 @@ export const SceneRendererCard: React.FC<NodeProps<SceneRendererData>> = ({ data
       // Use Gemini 2.5 Flash Image to make the scene photorealistic
       const result = await enhanceSceneWithAI({
         baseImage: lastRender,
-        prompt: 'Make this image look photorealistic. Enhance the lighting, materials, and overall visual quality to create a stunning, realistic render.',
+        prompt: 'Make this image look photorealistic, and all the objects and background environments fit together seamlessly. Enhance the lighting, materials, and overall visual quality to create a stunning, realistic render.',
         provider: 'gemini',
       });
 
