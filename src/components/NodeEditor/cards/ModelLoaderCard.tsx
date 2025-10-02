@@ -81,19 +81,6 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
     scene.add(cube);
     defaultCubeRef.current = cube;
 
-    // Ground plane
-    const planeGeometry = new THREE.PlaneGeometry(10, 10);
-    const planeMaterial = new THREE.MeshPhongMaterial({ 
-      color: 0x2a2a2a,
-      transparent: true,
-      opacity: 0.3
-    });
-    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    plane.rotation.x = -Math.PI / 2;
-    plane.position.y = -0.5;
-    plane.receiveShadow = true;
-    scene.add(plane);
-
     mountRef.current.appendChild(renderer.domElement);
 
     // Initialize 3D controls directly
@@ -101,6 +88,9 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
     let previousMouse = { x: 0, y: 0 };
     const spherical = new THREE.Spherical();
     const target = new THREE.Vector3(0, 0, 0);
+    
+    // Store target in a ref so it can be updated when model is loaded
+    const targetRef = { current: target };
 
     // Initialize spherical coordinates from camera position
     const vector = new THREE.Vector3().subVectors(camera.position, target);
@@ -130,8 +120,8 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
 
       // Update camera position
       const newVector = new THREE.Vector3().setFromSpherical(spherical);
-      camera.position.copy(newVector.add(target));
-      camera.lookAt(target);
+      camera.position.copy(newVector.add(targetRef.current));
+      camera.lookAt(targetRef.current);
 
       previousMouse = { x: event.clientX, y: event.clientY };
     };
@@ -151,8 +141,8 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
 
       // Update camera position
       const newVector = new THREE.Vector3().setFromSpherical(spherical);
-      camera.position.copy(newVector.add(target));
-      camera.lookAt(target);
+      camera.position.copy(newVector.add(targetRef.current));
+      camera.lookAt(targetRef.current);
     };
 
     // Attach event listeners with passive option for wheel events
@@ -161,7 +151,7 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
     renderer.domElement.addEventListener('mouseup', handleMouseUp);
     renderer.domElement.addEventListener('wheel', handleWheel, { passive: false });
 
-    // Store cleanup function
+    // Store cleanup function and target ref
     const detachControls = () => {
       renderer.domElement.removeEventListener('mousedown', handleMouseDown);
       renderer.domElement.removeEventListener('mousemove', handleMouseMove);
@@ -169,6 +159,9 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
       renderer.domElement.removeEventListener('wheel', handleWheel);
     };
     controlsRef.current = detachControls;
+    
+    // Store target ref for updating when model is loaded
+    (controlsRef as any).targetRef = targetRef;
 
     // Animation loop
     const animate = () => {
@@ -207,7 +200,7 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
   };
 
   const addModelToScene = (model: THREE.Object3D) => {
-    if (!sceneRef.current) return;
+    if (!sceneRef.current || !cameraRef.current) return;
 
     // Remove previous model
     removeCurrentModel();
@@ -243,6 +236,17 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
     sceneRef.current.add(model);
     currentModelRef.current = model;
     setHasCustomModel(true);
+
+    // Update the controls target to center on the model
+    if ((controlsRef as any).targetRef) {
+      const modelCenter = new THREE.Vector3();
+      const modelBox = new THREE.Box3().setFromObject(model);
+      modelBox.getCenter(modelCenter);
+      (controlsRef as any).targetRef.current.copy(modelCenter);
+      
+      // Update camera to look at the new target
+      cameraRef.current.lookAt(modelCenter);
+    }
 
     // Publish model data to other nodes
     if (id) {
