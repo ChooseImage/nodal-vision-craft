@@ -85,6 +85,7 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
 
     // Initialize 3D controls directly
     let isDragging = false;
+    let isPanning = false;
     let previousMouse = { x: 0, y: 0 };
     const spherical = new THREE.Spherical();
     const target = new THREE.Vector3(0, 0, 0);
@@ -99,12 +100,20 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
     const handleMouseDown = (event: MouseEvent) => {
       event.preventDefault();
       event.stopPropagation();
-      isDragging = true;
+      
+      if (event.button === 0) {
+        // Left click - rotate
+        isDragging = true;
+      } else if (event.button === 2) {
+        // Right click - pan
+        isPanning = true;
+      }
+      
       previousMouse = { x: event.clientX, y: event.clientY };
     };
 
     const handleMouseMove = (event: MouseEvent) => {
-      if (!isDragging) return;
+      if (!isDragging && !isPanning) return;
       
       event.preventDefault();
       event.stopPropagation();
@@ -112,16 +121,38 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
       const deltaX = event.clientX - previousMouse.x;
       const deltaY = event.clientY - previousMouse.y;
 
-      spherical.theta -= deltaX * 0.01;
-      spherical.phi -= deltaY * 0.01;
+      if (isDragging) {
+        // Rotate camera
+        spherical.theta -= deltaX * 0.01;
+        spherical.phi -= deltaY * 0.01;
 
-      // Constrain phi to avoid flipping
-      spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+        // Constrain phi to avoid flipping
+        spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
 
-      // Update camera position
-      const newVector = new THREE.Vector3().setFromSpherical(spherical);
-      camera.position.copy(newVector.add(targetRef.current));
-      camera.lookAt(targetRef.current);
+        // Update camera position
+        const newVector = new THREE.Vector3().setFromSpherical(spherical);
+        camera.position.copy(newVector.add(targetRef.current));
+        camera.lookAt(targetRef.current);
+      } else if (isPanning) {
+        // Pan camera - move both camera and target together
+        const panSpeed = 0.005;
+        const right = new THREE.Vector3();
+        const up = new THREE.Vector3();
+        
+        // Get camera's right vector (perpendicular to view direction)
+        camera.getWorldDirection(new THREE.Vector3());
+        right.crossVectors(camera.up, new THREE.Vector3().subVectors(camera.position, targetRef.current)).normalize();
+        up.copy(camera.up).normalize();
+        
+        // Calculate pan offset based on mouse movement
+        const panOffset = new THREE.Vector3();
+        panOffset.add(right.multiplyScalar(-deltaX * panSpeed * spherical.radius));
+        panOffset.add(up.multiplyScalar(deltaY * panSpeed * spherical.radius));
+        
+        // Move both target and camera by the same offset
+        targetRef.current.add(panOffset);
+        camera.position.add(panOffset);
+      }
 
       previousMouse = { x: event.clientX, y: event.clientY };
     };
@@ -129,7 +160,17 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
     const handleMouseUp = (event: MouseEvent) => {
       event.preventDefault();
       event.stopPropagation();
-      isDragging = false;
+      
+      if (event.button === 0) {
+        isDragging = false;
+      } else if (event.button === 2) {
+        isPanning = false;
+      }
+    };
+
+    const handleContextMenu = (event: MouseEvent) => {
+      // Prevent context menu on canvas
+      event.preventDefault();
     };
 
     const handleWheel = (event: WheelEvent) => {
@@ -150,6 +191,7 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
     renderer.domElement.addEventListener('mousemove', handleMouseMove);
     renderer.domElement.addEventListener('mouseup', handleMouseUp);
     renderer.domElement.addEventListener('wheel', handleWheel, { passive: false });
+    renderer.domElement.addEventListener('contextmenu', handleContextMenu);
 
     // Store cleanup function and target ref
     const detachControls = () => {
@@ -157,6 +199,7 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
       renderer.domElement.removeEventListener('mousemove', handleMouseMove);
       renderer.domElement.removeEventListener('mouseup', handleMouseUp);
       renderer.domElement.removeEventListener('wheel', handleWheel);
+      renderer.domElement.removeEventListener('contextmenu', handleContextMenu);
     };
     controlsRef.current = detachControls;
     
@@ -402,7 +445,7 @@ export const ModelLoaderCard: React.FC<NodeProps<ModelLoaderData>> = ({ data, id
             className="w-full h-48 flex items-center justify-center"
           />
           <div className="absolute bottom-2 right-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
-            Drag to rotate
+            Left: Rotate | Right: Pan
           </div>
         </div>
       </div>
